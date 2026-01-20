@@ -2,57 +2,54 @@ pipeline {
     agent any
 
     environment {
-        IIS_SITE = "DotNetApp"
-        DEPLOY_PATH = "C:\\inetpub\\DotNetApp"
+        DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+        DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1'
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                git url: 'https://github.com/prashanty263/product-app-aws.git', branch: 'main'
+                git branch: 'main',
+                    url: 'https://github.com/prashanty263/product-app-aws.git'
             }
         }
 
         stage('Restore') {
             steps {
-                bat 'dotnet restore'
+                bat 'dotnet restore'   // Windows
+                // sh 'dotnet restore' // Linux
             }
         }
 
         stage('Build') {
             steps {
-                bat 'dotnet build -c Release'
+                bat 'dotnet build --configuration Release'
+                // sh 'dotnet build --configuration Release'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                bat 'dotnet test --no-build'
+                // sh 'dotnet test --no-build'
             }
         }
 
         stage('Publish') {
             steps {
                 bat 'dotnet publish -c Release -o publish'
-            }
-        }
-
-        stage('Deploy to IIS') {
-            steps {
-                bat """
-                powershell -Command "
-                Import-Module WebAdministration;
-                Stop-WebSite '${IIS_SITE}';
-                Remove-Item '${DEPLOY_PATH}\\*' -Recurse -Force;
-                Copy-Item 'publish\\*' '${DEPLOY_PATH}' -Recurse;
-                Start-WebSite '${IIS_SITE}'
-                "
-                """
+                // sh 'dotnet publish -c Release -o publish'
             }
         }
     }
 
     post {
         success {
-            echo 'Deployment to IIS successful!'
+            echo 'Build completed successfully!'
         }
         failure {
-            echo 'Deployment failed!'
+            echo 'Build failed!'
         }
     }
 }
